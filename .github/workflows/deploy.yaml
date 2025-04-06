@@ -30,7 +30,9 @@ jobs:
 
             echo "Building Vite client..."
             cd ../client
-            npm install
+            sudo rm -rf node_modules
+            sudo rm -rf dist
+            npm ci
             npm run build
 
             echo "Restarting NGINX..."
