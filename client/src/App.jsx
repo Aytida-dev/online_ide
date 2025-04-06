@@ -115,7 +115,6 @@ function App() {
 
     ws.current.onclose = () => {
       stopExecution();
-      setIsConnected(false);
       setContainerId(null);
       addMessage('Connection closed');
     };

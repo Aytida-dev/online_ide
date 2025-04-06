@@ -29,11 +29,4 @@ jobs:
             sudo systemctl restart go-online-ide.service
 
             echo "Building Vite client..."
-            cd ../client
-            sudo rm -rf node_modules
-            sudo rm -rf dist
-            npm ci
-            npm run build
-
-            echo "Restarting NGINX..."
             sudo systemctl restart nginx
