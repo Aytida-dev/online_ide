@@ -46,7 +46,7 @@ func main() {
 			return
 		}
 
-		if err := c.WriteMessage(websocket.TextMessage, []byte("Container started: "+containerID)); err != nil {
+		if err := c.WriteMessage(websocket.TextMessage, []byte("container_id: "+containerID)); err != nil {
 			log.Printf("Failed to send message: %v", err)
 			return
 		}

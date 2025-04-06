@@ -15,65 +15,26 @@ const MESSAGE_TYPE = {
 const LANGUAGES = {
   js: {
     name: 'JavaScript',
-    defaultCode: `console.log("Hello from JavaScript!");
-const readline = require('readline');
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-rl.question('What is your name? ', (name) => {
-  console.log(\`Hello, \${name}!\`);
-  rl.close();
-});`
   },
   py: {
     name: 'Python',
-    defaultCode: `print("Hello from Python!")
-name = input("What is your name? ")
-print(f"Hello, {name}!")`
-  },
-  java: {
-    name: 'Java',
-    defaultCode: `public class Main {
-  public static void main(String[] args) {
-    System.out.println("Hello from Java!");
-  }
-}`
   },
   c: {
     name: 'C',
-    defaultCode: `#include <stdio.h>
-int main() {
-  printf("Hello from C!\\n");
-  return 0;
-}`
+
   },
   cpp: {
     name: 'C++',
-    defaultCode: `#include <iostream>
-using namespace std;
-int main() {
-  cout << "Hello from C++!" << endl;
-  return 0;
-}`
+
   },
   ts: {
     name: 'TypeScript',
-    defaultCode: `console.log("Hello from TypeScript!");
-const name: string = await new Promise(res => {
-  process.stdin.once('data', data => res(data.toString().trim()));
-});
-console.log(\`Hello, \${name}!\`);`
+
   },
-  php: {
-    name: 'PHP',
-    defaultCode: `<?php
-echo "Hello from PHP!\\n";
-$name = fgets(STDIN);
-echo "Hello, " . trim($name) . "!\\n";
-?>`
-  }
+  "py-ml": {
+    name: 'Python with ml',
+  },
+
 };
 
 function App() {
@@ -91,13 +52,7 @@ function App() {
 
   // Initialize with default code for current language
 
-  console.log(isConnected);
 
-
-  useEffect(() => {
-    setCode(LANGUAGES[currentLanguage].defaultCode);
-    return cleanup;
-  }, [currentLanguage]);
 
   // Cleanup function
   const cleanup = async () => {
@@ -108,9 +63,6 @@ function App() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-
-    // block connection for 2 sec
-    await new Promise(resolve => setTimeout(resolve, 2000));
 
   };
 
@@ -127,8 +79,7 @@ function App() {
     ws.current = new WebSocket(wsUrl.toString());
 
     ws.current.onopen = () => {
-      setIsConnected(true);
-      addMessage(`Connected to server (${LANGUAGES[language].name}). Ready to execute code.`);
+      addMessage(`Connecting to server (${LANGUAGES[language].name}) to execute code.`);
     };
 
     ws.current.onmessage = (event) => {
@@ -137,6 +88,7 @@ function App() {
       if (data.startsWith(MESSAGE_TYPE.CONTAINER_ID)) {
         const id = data.replace(MESSAGE_TYPE.CONTAINER_ID, '');
         setContainerId(id);
+        setIsConnected(true);
         addMessage(`Container started: ${id}`);
       }
       else if (data.startsWith(MESSAGE_TYPE.ERROR)) {
@@ -162,8 +114,9 @@ function App() {
     };
 
     ws.current.onclose = () => {
-      setIsConnected(false);
       stopExecution();
+      setIsConnected(false);
+      setContainerId(null);
       addMessage('Connection closed');
     };
   };
@@ -173,7 +126,6 @@ function App() {
     if (language === currentLanguage) return;
 
     setCurrentLanguage(language);
-    setCode(LANGUAGES[language].defaultCode);
     await connectWebSocket(language);
   };
 
@@ -291,7 +243,7 @@ function App() {
               {isRunning ? 'Running...' : 'Execute'}
             </button>
             <button
-              onClick={() => setCode(LANGUAGES[currentLanguage].defaultCode)}
+              onClick={() => setCode("")}
               disabled={isRunning}
             >
               Reset Code
