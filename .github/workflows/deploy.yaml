@@ -24,8 +24,9 @@ jobs:
 
             echo "Building Go server..."
             cd sever
-            go build -o app
-            sudo systemctl restart go-server
+            go build main.go
+            chmod +x main
+            sudo systemctl restart go-online-ide.service
 
             echo "Building Vite client..."
             cd ../client
