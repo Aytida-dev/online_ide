@@ -10,9 +10,24 @@ import (
 	"github.com/docker/docker/api/types/container"
 )
 
+var idleContainers = map[string]string{}
+
 func (dm *DockerManager) MonitorResources() {
 	ticker := time.NewTicker(MONITORING_INTERVAL)
 	defer ticker.Stop()
+
+	if idleContainers == nil {
+		idleContainers = make(map[string]string)
+	}
+	if dm.containerResources == nil {
+		dm.containerResources = make(map[string]ContainerResources)
+	}
+	if dm.reusableContainers == nil {
+		dm.reusableContainers = make(map[string]map[string]int)
+	}
+	if dm.filledContainers == nil {
+		dm.filledContainers = make(map[string]map[string]int)
+	}
 
 	for {
 		select {
@@ -20,6 +35,7 @@ func (dm *DockerManager) MonitorResources() {
 			return
 		case <-ticker.C:
 			dm.checkAndUpdateResources()
+
 		}
 	}
 }
@@ -33,7 +49,7 @@ func (dm *DockerManager) checkAndUpdateResources() {
 	resuableContainers := make(map[string]map[string]int)
 	filledContainers := make(map[string]map[string]int)
 
-	containersToRemove := []string{}
+	containersToRemove := make(map[string]string)
 
 	dm.mu.Lock()
 
@@ -44,14 +60,6 @@ func (dm *DockerManager) checkAndUpdateResources() {
 	dm.mu.Unlock()
 
 	for containerID := range containerResources {
-		// Get container stats
-		stats, err := dm.getContainerStats(containerID)
-		if err != nil {
-			log.Printf("Failed to get stats for container %s: %v", containerID, err)
-			containersToRemove = append(containersToRemove, containerID)
-			continue
-		}
-
 		var lang string
 		var opts LangOptions
 		for l, containers := range resuableContainers {
@@ -75,6 +83,13 @@ func (dm *DockerManager) checkAndUpdateResources() {
 			continue
 		}
 
+		stats, err := dm.getContainerStats(containerID)
+		if err != nil {
+			log.Printf("Failed to get stats for container %s: %v", containerID, err)
+			containersToRemove[containerID] = lang
+			continue
+		}
+
 		resources := containerResources[containerID]
 
 		var newMem int64
@@ -82,6 +97,9 @@ func (dm *DockerManager) checkAndUpdateResources() {
 		var toChange bool
 
 		// Check if memory usage is high
+
+		log.Print(stats.memoryPercentage, " ", stats.cpuPercentage)
+
 		if stats.memoryPercentage > MEMORY_USAGE_HIGH_THRESHOLD && resources.CurrentMemory < opts.MaxMem {
 			newMem = min(resources.CurrentMemory+opts.IncrementalMem, opts.MaxMem)
 			toChange = true
@@ -99,6 +117,24 @@ func (dm *DockerManager) checkAndUpdateResources() {
 			toChange = true
 		}
 
+		if stats.memoryPercentage < float64(opts.MemIdleThreshold) && stats.cpuPercentage < float64(opts.CpuIdleThreshold) {
+			dm.mu.Lock()
+			toChange = false
+			if _, ok := idleContainers[containerID]; !ok {
+				delete(dm.reusableContainers[lang], containerID)
+				delete(dm.filledContainers[lang], containerID)
+				delete(dm.containerResources, containerID)
+
+				err := dm.RemoveContainer(containerID, lang)
+				if err != nil {
+					log.Printf("Failed to remove container %s: %v", containerID, err)
+				}
+				log.Print("Idle Container removed : ", containerID)
+			} else {
+				idleContainers[containerID] = lang
+			}
+		}
+
 		if toChange {
 			log.Printf("Scaling container %s memory from %d MB to %d MB, CPU from %d to %d",
 				containerID, resources.CurrentMemory/(1024*1024), newMem/(1024*1024),
@@ -107,7 +143,7 @@ func (dm *DockerManager) checkAndUpdateResources() {
 			err := dm.updateContainerResources(containerID, newMem, newCpu)
 			if err != nil {
 				log.Printf("Failed to update resources for container %s: %v", containerID, err)
-				containersToRemove = append(containersToRemove, containerID)
+				containersToRemove[containerID] = lang
 				continue
 			} else {
 				resources.CurrentMemory = newMem
@@ -115,17 +151,6 @@ func (dm *DockerManager) checkAndUpdateResources() {
 
 				dm.mu.Lock()
 				dm.containerResources[containerID] = resources
-				for _, cont := range containersToRemove {
-					delete(dm.containerResources, cont)
-					delete(dm.reusableContainers[lang], cont)
-					delete(dm.filledContainers[lang], cont)
-
-					err := dm.RemoveContainer(cont, lang)
-					if err != nil {
-						log.Printf("Failed to remove container %s: %v", cont, err)
-					}
-				}
-
 				dm.mu.Unlock()
 			}
 		}

@@ -11,7 +11,7 @@ import (
 
 const (
 	MAX_USERS                   = 2
-	MONITORING_INTERVAL         = 10 * time.Second
+	MONITORING_INTERVAL         = 5 * time.Minute
 	MEMORY_USAGE_HIGH_THRESHOLD = 90
 	MEMORY_USAGE_LOW_THRESHOLD  = 30
 	CPU_UNIT                    = 50_000 // 1/2 core
@@ -21,20 +21,22 @@ const (
 )
 
 type LangOptions struct {
-	Image          string
-	IsCompiled     bool
-	ExecCmd        func(string) []string
-	CompileCmd     func(string) []string
-	MinCpu         int64
-	MinMem         int64
-	IncrementalMem int64
-	IncrementalCpu int64
-	MaxMem         int64
-	MaxCpu         int64
-	Mounts         []mount.Mount
-	Env            []string
-	RunOnHost      func(string) []string
-	FileName       func(string) string
+	Image            string
+	IsCompiled       bool
+	ExecCmd          func(string) []string
+	CompileCmd       func(string) []string
+	MinCpu           int64
+	MinMem           int64
+	IncrementalMem   int64
+	IncrementalCpu   int64
+	MaxMem           int64
+	MaxCpu           int64
+	Mounts           []mount.Mount
+	Env              []string
+	RunOnHost        func(string) []string
+	FileName         func(string) string
+	CpuIdleThreshold int64
+	MemIdleThreshold int64
 }
 
 type ContainerResources struct {

@@ -59,7 +59,7 @@ rl.question('What is your name? ', (name) => {
     setExecutionCount(0);
     setExecutionTime(0);
 
-    ws.current = new WebSocket(import.meta.env.VITE_API_URL);
+    ws.current = new WebSocket(import.meta.env.VITE_API_URL || 'ws://localhost:3000/ws');
 
     ws.current.onopen = () => {
       setIsConnected(true);

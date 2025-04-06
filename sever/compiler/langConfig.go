@@ -34,6 +34,8 @@ var LangImages = map[string]LangOptions{
 			"HOME=/tmp",
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		},
+		CpuIdleThreshold: 5,
+		MemIdleThreshold: 15,
 	},
 	"ts": {
 		Image:      "node:22.14-alpine",
@@ -66,6 +68,8 @@ var LangImages = map[string]LangOptions{
 			"HOME=/tmp",
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		},
+		CpuIdleThreshold: 5,
+		MemIdleThreshold: 15,
 	},
 	"py": {
 		Image:      "python:3.12-alpine",
@@ -95,6 +99,8 @@ var LangImages = map[string]LangOptions{
 			"PYTHONPATH=/opt/py-packages",
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		},
+		CpuIdleThreshold: 5,
+		MemIdleThreshold: 15,
 	},
 	"py-ml": {
 		Image:      "python:3.12-alpine",
@@ -124,6 +130,8 @@ var LangImages = map[string]LangOptions{
 			"PYTHONPATH=/opt/py-packages",
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		},
+		CpuIdleThreshold: 5,
+		MemIdleThreshold: 30,
 	},
 	"c": {
 		Image:      "debian:12.10-slim",
@@ -143,12 +151,14 @@ var LangImages = map[string]LangOptions{
 		FileName: func(containerID string) string {
 			return fmt.Sprintf("%s-%d-code.c", containerID, time.Now().UnixNano())
 		},
-		MinCpu:         1,
-		MinMem:         128 * 1024 * 1024,
-		IncrementalMem: 100 * 1024 * 1024,
-		IncrementalCpu: 1,
-		MaxMem:         1024 * 1024 * 1024,
-		MaxCpu:         2,
+		MinCpu:           1,
+		MinMem:           128 * 1024 * 1024,
+		IncrementalMem:   100 * 1024 * 1024,
+		IncrementalCpu:   1,
+		MaxMem:           1024 * 1024 * 1024,
+		MaxCpu:           2,
+		CpuIdleThreshold: 3,
+		MemIdleThreshold: 5,
 	},
 	"cpp": {
 		Image:      "gcc:14",
@@ -168,11 +178,13 @@ var LangImages = map[string]LangOptions{
 		FileName: func(containerID string) string {
 			return fmt.Sprintf("%s-%d-code.cpp", containerID, time.Now().UnixNano())
 		},
-		MinCpu:         1,
-		MinMem:         128 * 1024 * 1024,
-		IncrementalMem: 100 * 1024 * 1024,
-		IncrementalCpu: 1,
-		MaxMem:         1024 * 1024 * 1024,
-		MaxCpu:         2,
+		MinCpu:           1,
+		MinMem:           128 * 1024 * 1024,
+		IncrementalMem:   100 * 1024 * 1024,
+		IncrementalCpu:   1,
+		MaxMem:           1024 * 1024 * 1024,
+		MaxCpu:           2,
+		CpuIdleThreshold: 3,
+		MemIdleThreshold: 5,
 	},
 }

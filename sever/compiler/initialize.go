@@ -75,10 +75,6 @@ func (dm *DockerManager) CreateContainer(lang string) (string, error) {
 		return "", fmt.Errorf("unsupported language: %s", lang)
 	}
 
-	// mounts := []mount.Mount{}
-
-	// mounts = append(mounts, opt.Mounts...)
-
 	testTimeout := 60 * 5
 
 	config := &container.Config{
