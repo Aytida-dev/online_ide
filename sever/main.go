@@ -32,7 +32,12 @@ func main() {
 	})
 
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-		language := "cpp"
+		language := c.Query("language")
+		if language == "" {
+			log.Println("Language not specified")
+			c.WriteMessage(websocket.TextMessage, []byte("error: Language not specified"))
+			return
+		}
 
 		containerID, err := dockerManager.FindContainer(language)
 		if err != nil {

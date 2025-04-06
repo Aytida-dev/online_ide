@@ -96,10 +96,6 @@ func (dm *DockerManager) checkAndUpdateResources() {
 		var newCpu int64
 		var toChange bool
 
-		// Check if memory usage is high
-
-		log.Print(stats.memoryPercentage, " ", stats.cpuPercentage)
-
 		if stats.memoryPercentage > MEMORY_USAGE_HIGH_THRESHOLD && resources.CurrentMemory < opts.MaxMem {
 			newMem = min(resources.CurrentMemory+opts.IncrementalMem, opts.MaxMem)
 			toChange = true

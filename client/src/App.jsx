@@ -7,22 +7,16 @@ const MESSAGE_TYPE = {
   EXEC_TERMINATED: 'EXEC_TERMINATED',
   EXEC_TIMEOUT: 'EXEC_TIMEOUT',
   CONTAINER_ID: 'container_id:',
-  ERROR: 'error:'
+  ERROR: 'error:',
+  STOP: 'STOP'
 };
 
-function App() {
-  const [messages, setMessages] = useState([]);
-  const [jsCode, setJsCode] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [containerId, setContainerId] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [executionCount, setExecutionCount] = useState(0);
-  const [executionTime, setExecutionTime] = useState(0);
-  const ws = useRef(null);
-  const timerRef = useRef(null);
-
-  const defaultJsCode = `const readline = require('readline');
+// Language configurations
+const LANGUAGES = {
+  js: {
+    name: 'JavaScript',
+    defaultCode: `console.log("Hello from JavaScript!");
+const readline = require('readline');
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -30,40 +24,111 @@ const rl = readline.createInterface({
 
 rl.question('What is your name? ', (name) => {
   console.log(\`Hello, \${name}!\`);
-  rl.question('How old are you? ', (age) => {
-    console.log(\`\${name} is \${age} years old.\`);
-    rl.close();
-  });
-});`;
+  rl.close();
+});`
+  },
+  py: {
+    name: 'Python',
+    defaultCode: `print("Hello from Python!")
+name = input("What is your name? ")
+print(f"Hello, {name}!")`
+  },
+  java: {
+    name: 'Java',
+    defaultCode: `public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello from Java!");
+  }
+}`
+  },
+  c: {
+    name: 'C',
+    defaultCode: `#include <stdio.h>
+int main() {
+  printf("Hello from C!\\n");
+  return 0;
+}`
+  },
+  cpp: {
+    name: 'C++',
+    defaultCode: `#include <iostream>
+using namespace std;
+int main() {
+  cout << "Hello from C++!" << endl;
+  return 0;
+}`
+  },
+  ts: {
+    name: 'TypeScript',
+    defaultCode: `console.log("Hello from TypeScript!");
+const name: string = await new Promise(res => {
+  process.stdin.once('data', data => res(data.toString().trim()));
+});
+console.log(\`Hello, \${name}!\`);`
+  },
+  php: {
+    name: 'PHP',
+    defaultCode: `<?php
+echo "Hello from PHP!\\n";
+$name = fgets(STDIN);
+echo "Hello, " . trim($name) . "!\\n";
+?>`
+  }
+};
 
-  // Initialize with default code
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [code, setCode] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [containerId, setContainerId] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [executionCount, setExecutionCount] = useState(0);
+  const [executionTime, setExecutionTime] = useState(0);
+  const [currentLanguage, setCurrentLanguage] = useState('js');
+  const ws = useRef(null);
+  const timerRef = useRef(null);
+
+  // Initialize with default code for current language
+
+  console.log(isConnected);
+
+
   useEffect(() => {
-    setJsCode(defaultJsCode);
+    setCode(LANGUAGES[currentLanguage].defaultCode);
     return cleanup;
-  }, []);
+  }, [currentLanguage]);
 
   // Cleanup function
-  const cleanup = () => {
-    if (ws.current) {
+  const cleanup = async () => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.close();
     }
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+
+    // block connection for 2 sec
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
   };
 
-  // Connect to WebSocket
-  const connectWebSocket = () => {
-    cleanup();
+  // Connect to WebSocket with language parameter
+  const connectWebSocket = async (language = currentLanguage) => {
+    await cleanup();
     setMessages([]);
     setExecutionCount(0);
     setExecutionTime(0);
 
-    ws.current = new WebSocket(import.meta.env.VITE_API_URL || 'ws://localhost:3000/ws');
+    const wsUrl = new URL(import.meta.env.VITE_API_URL || 'ws://localhost:3000/ws');
+    wsUrl.searchParams.set('language', language);
+
+    ws.current = new WebSocket(wsUrl.toString());
 
     ws.current.onopen = () => {
       setIsConnected(true);
-      addMessage('Connected to server. Ready to execute JavaScript.');
+      addMessage(`Connected to server (${LANGUAGES[language].name}). Ready to execute code.`);
     };
 
     ws.current.onmessage = (event) => {
@@ -97,9 +162,19 @@ rl.question('What is your name? ', (name) => {
     };
 
     ws.current.onclose = () => {
+      setIsConnected(false);
       stopExecution();
       addMessage('Connection closed');
     };
+  };
+
+  // Change language and reconnect
+  const changeLanguage = async (language) => {
+    if (language === currentLanguage) return;
+
+    setCurrentLanguage(language);
+    setCode(LANGUAGES[language].defaultCode);
+    await connectWebSocket(language);
   };
 
   // Execute code with CODE: prefix
@@ -109,36 +184,39 @@ rl.question('What is your name? ', (name) => {
       return;
     }
 
-    if (!jsCode.trim()) {
-      addMessage('Please enter some JavaScript code', false);
+    if (!code.trim()) {
+      addMessage('Please enter some code', false);
       return;
     }
 
     startExecution();
-    // Send code with CODE: prefix
-    ws.current.send(`${MESSAGE_TYPE.CODE}${jsCode}`);
+    ws.current.send(`${MESSAGE_TYPE.CODE}${code}`);
+  };
+
+  // Send STOP command to server
+  const stopExecution = () => {
+    if (isRunning && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(MESSAGE_TYPE.STOP);
+    }
+
+    setIsRunning(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   // Start execution timer and state
   const startExecution = () => {
     setIsRunning(true);
     setExecutionCount(prev => prev + 1);
-    setMessages(prev => [...prev, { text: 'Executing JavaScript...', isOutput: true }]);
+    setMessages(prev => [...prev, { text: `Executing ${LANGUAGES[currentLanguage].name} code...`, isOutput: true }]);
     setExecutionTime(0);
     setInputValue('');
 
     timerRef.current = setInterval(() => {
       setExecutionTime(prev => prev + 1);
     }, 1000);
-  };
-
-  // Stop execution and cleanup
-  const stopExecution = () => {
-    setIsRunning(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
   };
 
   // Send input to running program
@@ -150,7 +228,6 @@ rl.question('What is your name? ', (name) => {
 
     if (!inputValue.trim()) return;
 
-    // Send raw input (no prefix)
     ws.current.send(inputValue + '\n');
     setInputValue('');
   };
@@ -178,33 +255,43 @@ rl.question('What is your name? ', (name) => {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>JavaScript Docker Runner</h1>
+        <h1>Multi-Language Code Runner</h1>
 
         <div className="controls">
           {!isConnected ? (
-            <button onClick={connectWebSocket}>Connect</button>
+            <button onClick={() => connectWebSocket()}>Connect</button>
           ) : (
             <button onClick={cleanup}>Disconnect</button>
           )}
+
+          <select
+            value={currentLanguage}
+            onChange={(e) => changeLanguage(e.target.value)}
+            disabled={isConnected && isRunning}
+          >
+            {Object.entries(LANGUAGES).map(([key, lang]) => (
+              <option key={key} value={key}>{lang.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="code-editor">
           <textarea
-            value={jsCode}
-            onChange={(e) => setJsCode(e.target.value)}
-            placeholder="Enter JavaScript code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder={`Enter ${LANGUAGES[currentLanguage].name} code`}
             disabled={isRunning}
             rows={10}
           />
           <div className="editor-buttons">
             <button
               onClick={executeCode}
-              disabled={!isConnected || isRunning || !jsCode.trim()}
+              disabled={!isConnected || isRunning || !code.trim()}
             >
               {isRunning ? 'Running...' : 'Execute'}
             </button>
             <button
-              onClick={() => setJsCode(defaultJsCode)}
+              onClick={() => setCode(LANGUAGES[currentLanguage].defaultCode)}
               disabled={isRunning}
             >
               Reset Code
@@ -214,7 +301,7 @@ rl.question('What is your name? ', (name) => {
 
         <div className="terminal-container">
           <div className="terminal-header">
-            <span>Terminal</span>
+            <span>Terminal ({LANGUAGES[currentLanguage].name})</span>
             {isRunning && (
               <div className="execution-info">
                 <span>Executing #{executionCount}</span>
