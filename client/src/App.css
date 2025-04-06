@@ -1,0 +1,95 @@
+/* Add these to your existing App.css */
+
+.editor-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.terminal-container {
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background-color: #333;
+  color: white;
+  padding: 8px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.execution-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.stop-button {
+  background-color: #ff4444;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.terminal {
+  background-color: #1e1e1e;
+  height: 300px;
+  overflow-y: auto;
+  padding: 15px;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.input-area {
+  margin-top: 15px;
+  display: flex;
+  width: 100%;
+}
+
+.input-area input {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #61dafb;
+  border-radius: 4px 0 0 4px;
+  background-color: #2d2d2d;
+  color: white;
+}
+
+.input-area button {
+  border-radius: 0 4px 4px 0;
+}
+
+.output {
+  color: #e0e0e0;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.error {
+  color: #ff6666;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+textarea {
+  width: 100%;
+  height: 200px;
+  padding: 10px;
+  border: 1px solid #61dafb;
+  border-radius: 4px;
+  background-color: #2d2d2d;
+  color: white;
+  font-family: monospace;
+}
+textarea:focus {
+  outline: none;
+  border-color: #61dafb;
+}
+textarea::placeholder {
+  color: #888;
+}
