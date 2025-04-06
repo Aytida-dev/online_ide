@@ -25,8 +25,6 @@ func (dm *DockerManager) MonitorResources() {
 }
 
 func (dm *DockerManager) checkAndUpdateResources() {
-	// create a hardcopy of the dm
-
 	if len(dm.containerResources) == 0 {
 		return
 	}
@@ -34,6 +32,8 @@ func (dm *DockerManager) checkAndUpdateResources() {
 	containerResources := make(map[string]ContainerResources)
 	resuableContainers := make(map[string]map[string]int)
 	filledContainers := make(map[string]map[string]int)
+
+	containersToRemove := []string{}
 
 	dm.mu.Lock()
 
@@ -43,22 +43,15 @@ func (dm *DockerManager) checkAndUpdateResources() {
 
 	dm.mu.Unlock()
 
-	startTime := time.Now()
-	defer func() {
-		log.Printf("Resource check took %s", time.Since(startTime))
-	}()
-
 	for containerID := range containerResources {
 		// Get container stats
 		stats, err := dm.getContainerStats(containerID)
 		if err != nil {
 			log.Printf("Failed to get stats for container %s: %v", containerID, err)
+			containersToRemove = append(containersToRemove, containerID)
 			continue
 		}
 
-		// log.Print("Container stats: ", stats, " for container: ", containerID)
-
-		// Find language for this container
 		var lang string
 		var opts LangOptions
 		for l, containers := range resuableContainers {
@@ -114,12 +107,25 @@ func (dm *DockerManager) checkAndUpdateResources() {
 			err := dm.updateContainerResources(containerID, newMem, newCpu)
 			if err != nil {
 				log.Printf("Failed to update resources for container %s: %v", containerID, err)
+				containersToRemove = append(containersToRemove, containerID)
+				continue
 			} else {
 				resources.CurrentMemory = newMem
 				resources.CurrentCPU = newCpu
 
 				dm.mu.Lock()
 				dm.containerResources[containerID] = resources
+				for _, cont := range containersToRemove {
+					delete(dm.containerResources, cont)
+					delete(dm.reusableContainers[lang], cont)
+					delete(dm.filledContainers[lang], cont)
+
+					err := dm.RemoveContainer(cont, lang)
+					if err != nil {
+						log.Printf("Failed to remove container %s: %v", cont, err)
+					}
+				}
+
 				dm.mu.Unlock()
 			}
 		}

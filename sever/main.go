@@ -56,8 +56,6 @@ func main() {
 			log.Printf("Interactive session error: %v", err)
 			c.WriteMessage(websocket.TextMessage, []byte("error: "+err.Error()))
 		}
-
-		log.Print("Container stopped: ", containerID)
 	}))
 
 	shutdown := make(chan os.Signal, 1)
