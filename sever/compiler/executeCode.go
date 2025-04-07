@@ -79,6 +79,7 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 
 			if opt.RunOnHost != nil {
 				cmd := opt.RunOnHost(CODE_FILES_DIR + "/" + fileName)
+				log.Print("Host command: ", cmd)
 				if out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
 					log.Printf("failed to run command on host: %v", err)
 
@@ -108,6 +109,8 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 
 			execConfig.Cmd = opt.ExecCmd(CONTAINER_COMPILED_FILES + "/" + fileName)
 		}
+
+		log.Print("Exec command: ", execConfig.Cmd)
 
 		execResp, err := dm.cli.ContainerExecCreate(ctx, containerID, execConfig)
 		if err != nil {
