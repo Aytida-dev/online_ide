@@ -13,8 +13,7 @@ import (
 var idleContainers = map[string]string{}
 
 func (dm *DockerManager) MonitorResources() {
-	ticker := time.NewTicker(MONITORING_INTERVAL)
-	defer ticker.Stop()
+	time.Sleep(MONITORING_INTERVAL)
 
 	if idleContainers == nil {
 		idleContainers = make(map[string]string)
@@ -33,10 +32,11 @@ func (dm *DockerManager) MonitorResources() {
 		select {
 		case <-dm.ctx.Done():
 			return
-		case <-ticker.C:
+		default:
 			dm.checkAndUpdateResources()
-
 		}
+
+		time.Sleep(MONITORING_INTERVAL)
 	}
 }
 
@@ -151,6 +151,17 @@ func (dm *DockerManager) checkAndUpdateResources() {
 			}
 		}
 
+	}
+
+	for containerID, lang := range containersToRemove {
+		dm.mu.Lock()
+		defer dm.mu.Unlock()
+
+		err := dm.RemoveContainer(containerID, lang)
+		if err != nil {
+			log.Printf("Failed to remove container %s: %v", containerID, err)
+		}
+		log.Print("Idle Container removed : ", containerID)
 	}
 }
 
