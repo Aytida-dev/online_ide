@@ -90,6 +90,10 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 					continue
 				}
 				log.Print("Host commant ran bin has been created")
+
+				if lang == "java" && len(cmd) > 2 {
+					fileName = strings.TrimPrefix(cmd[2], CONTAINER_COMPILED_FILES+"/")
+				}
 			} else {
 				return fmt.Errorf("no Host command provided")
 			}

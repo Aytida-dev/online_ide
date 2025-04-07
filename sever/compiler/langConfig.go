@@ -191,10 +191,17 @@ var LangImages = map[string]LangOptions{
 	"java": {
 		Image:      "openjdk:21-slim",
 		IsCompiled: true,
-		ExecCmd: func(s string) []string {
-			userID := filepath.Base(filepath.Dir(s)) // assumes s = /tmp/code_files/<user>/code.java
-			className := strings.TrimSuffix(filepath.Base(s), ".java")
-			return []string{"java", "-cp", filepath.Join(CONTAINER_COMPILED_FILES, userID), className}
+		ExecCmd: func(s string) []string { // s = /tmp/tmp_compiled/<user>
+			files, err := os.ReadDir(s)
+			if err != nil {
+				return []string{"java", "-cp", s, "Main"}
+			}
+			for _, file := range files {
+				if strings.HasSuffix(file.Name(), ".class") {
+					return []string{"java", "-cp", s, strings.TrimSuffix(file.Name(), ".class")}
+				}
+			}
+			return []string{"java", "-cp", s, "Main"}
 		},
 		Mounts: []mount.Mount{
 			{
@@ -205,8 +212,9 @@ var LangImages = map[string]LangOptions{
 			},
 		},
 		RunOnHost: func(file string) []string {
-			userID := filepath.Base(filepath.Dir(file))
-			compiledDir := filepath.Join(COMPILED_FILES, userID)
+			id := time.Now().UnixNano()
+			userId := fmt.Sprintf("%d-%d", id, len(file))
+			compiledDir := filepath.Join(COMPILED_FILES, userId)
 			_ = os.MkdirAll(compiledDir, 0755)
 			return []string{"javac", "-d", compiledDir, file}
 		},
