@@ -240,23 +240,25 @@ var LangImages = map[string]LangOptions{
 		IsCompiled: false,
 		ExecCmd: func(s string) []string {
 			fileName := fmt.Sprintf("%s-%d-code.php", time.Now().Format("2006-01-02_15-04-05"), time.Now().UnixNano())
-			if err := os.WriteFile(CONTAINER_COMPILED_FILES+"/"+fileName, []byte(s), 0644); err != nil {
+			if err := os.WriteFile(fileName, []byte(s), 0644); err != nil {
 				log.Printf("failed to write file: %v", err)
 				return []string{"php", "-r", s}
 
 			}
-			return []string{"php", CONTAINER_COMPILED_FILES + "/" + fileName}
+			return []string{"php", fileName}
 		},
-		RunOnHost:        nil,
-		FileName:         nil,
-		MinCpu:           1,
-		MinMem:           64 * 1024 * 1024,
-		IncrementalMem:   64 * 1024 * 1024,
-		IncrementalCpu:   1,
-		MaxMem:           256 * 1024 * 1024,
-		MaxCpu:           1,
-		Env:              []string{},
-		MemIdleThreshold: 5,
+		RunOnHost:      nil,
+		FileName:       nil,
+		MinCpu:         1,
+		MinMem:         64 * 1024 * 1024,
+		IncrementalMem: 64 * 1024 * 1024,
+		IncrementalCpu: 1,
+		MaxMem:         256 * 1024 * 1024,
+		MaxCpu:         1,
+		Env: []string{
+			"HOME=/tmp",
+			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		}, MemIdleThreshold: 5,
 		CpuIdleThreshold: 3,
 	},
 }
