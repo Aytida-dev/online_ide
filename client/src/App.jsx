@@ -34,6 +34,9 @@ const LANGUAGES = {
   "py-ml": {
     name: 'Python with ml',
   },
+  java: {
+    name: 'Java',
+  }
 
 };
 

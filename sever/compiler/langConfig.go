@@ -208,13 +208,15 @@ var LangImages = map[string]LangOptions{
 			return fmt.Sprintf("%s-%d-code.java", containerID, time.Now().UnixNano())
 		},
 		MinCpu:         1,
-		MinMem:         256 * 1024 * 1024, // Java needs a bit more
+		MinMem:         256 * 1024 * 1024,
 		IncrementalMem: 128 * 1024 * 1024,
 		IncrementalCpu: 1,
 		MaxMem:         1024 * 1024 * 1024,
 		MaxCpu:         2,
-		Env: []string{
-			"CLASSPATH=.",
-		},
+		// Env: []string{
+		// 	"CLASSPATH=.",
+		// },
+		// MemIdleThreshold: 15,
+		// CpuIdleThreshold: 5,
 	},
 }

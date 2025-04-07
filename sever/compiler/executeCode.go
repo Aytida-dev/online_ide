@@ -75,6 +75,8 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 				continue
 			}
 
+			log.Print("File created: ", fileName)
+
 			if opt.RunOnHost != nil {
 				cmd := opt.RunOnHost(CODE_FILES_DIR + "/" + fileName)
 				if out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
@@ -86,6 +88,7 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 					waitForMsg = true
 					continue
 				}
+				log.Print("Host commant ran bin has been created")
 			} else {
 				return fmt.Errorf("no Host command provided")
 			}
