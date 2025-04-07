@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,9 +228,10 @@ var LangImages = map[string]LangOptions{
 		IncrementalCpu: 1,
 		MaxMem:         1024 * 1024 * 1024,
 		MaxCpu:         2,
-		// Env: []string{
-		// 	"CLASSPATH=.",
-		// },
+		Env: []string{
+			"HOME=/tmp",
+			"PATH=/usr/local/openjdk-21/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+		},
 		MemIdleThreshold: 15,
 		CpuIdleThreshold: 3,
 	},
@@ -237,10 +239,13 @@ var LangImages = map[string]LangOptions{
 		Image:      "php:8.3-cli",
 		IsCompiled: false,
 		ExecCmd: func(s string) []string {
-			s = strings.ReplaceAll(s, "<?php", "")
-			s = strings.ReplaceAll(s, "?>", "")
-			s = strings.TrimSpace(s)
-			return []string{"php -r", s}
+			fileName := fmt.Sprintf("%s-%d-code.php", time.Now().Format("2006-01-02_15-04-05"), time.Now().UnixNano())
+			if err := os.WriteFile(CONTAINER_COMPILED_FILES+"/"+fileName, []byte(s), 0644); err != nil {
+				log.Printf("failed to write file: %v", err)
+				return []string{"php", "-r", s}
+
+			}
+			return []string{"php", CONTAINER_COMPILED_FILES + "/" + fileName}
 		},
 		RunOnHost:        nil,
 		FileName:         nil,

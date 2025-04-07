@@ -54,12 +54,9 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 			Tty:          true,
 			Cmd:          opt.ExecCmd(tcode),
 			User:         "nobody",
-			Env: []string{
-				"HOME=/tmp",
-				"PATH=/usr/local/openjdk-21/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-			},
-			WorkingDir: "/tmp",
-			Privileged: false,
+			Env:          opt.Env,
+			WorkingDir:   "/tmp",
+			Privileged:   false,
 		}
 
 		if opt.IsCompiled {
@@ -75,8 +72,6 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 				continue
 			}
 
-			log.Print("File created: ", fileName)
-
 			if opt.RunOnHost != nil {
 				cmd := opt.RunOnHost(CODE_FILES_DIR + "/" + fileName)
 				log.Print("Host command: ", cmd)
@@ -89,7 +84,6 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 					waitForMsg = true
 					continue
 				}
-				log.Print("Host commant ran bin has been created")
 
 				if lang == "java" && len(cmd) > 2 {
 					fileName = strings.TrimPrefix(cmd[2], CONTAINER_COMPILED_FILES+"/")
@@ -110,8 +104,6 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 
 			execConfig.Cmd = opt.ExecCmd(CONTAINER_COMPILED_FILES + "/" + fileName)
 		}
-
-		log.Print("Exec command: ", execConfig.Cmd)
 
 		execResp, err := dm.cli.ContainerExecCreate(ctx, containerID, execConfig)
 		if err != nil {
