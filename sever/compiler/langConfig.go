@@ -187,4 +187,34 @@ var LangImages = map[string]LangOptions{
 		CpuIdleThreshold: 3,
 		MemIdleThreshold: 5,
 	},
+	"java": {
+		Image:      "openjdk:21-slim",
+		IsCompiled: true,
+		ExecCmd: func(s string) []string {
+			return []string{"java", "-cp", CONTAINER_COMPILED_FILES, strings.TrimSuffix(filepath.Base(s), ".java")}
+		},
+		Mounts: []mount.Mount{
+			{
+				Type:     mount.TypeBind,
+				Source:   COMPILED_FILES,
+				Target:   CONTAINER_COMPILED_FILES,
+				ReadOnly: true,
+			},
+		},
+		RunOnHost: func(file string) []string {
+			return []string{"javac", "-d", COMPILED_FILES, file}
+		},
+		FileName: func(containerID string) string {
+			return fmt.Sprintf("%s-%d-code.java", containerID, time.Now().UnixNano())
+		},
+		MinCpu:         1,
+		MinMem:         256 * 1024 * 1024, // Java needs a bit more
+		IncrementalMem: 128 * 1024 * 1024,
+		IncrementalCpu: 1,
+		MaxMem:         1024 * 1024 * 1024,
+		MaxCpu:         2,
+		Env: []string{
+			"CLASSPATH=.",
+		},
+	},
 }

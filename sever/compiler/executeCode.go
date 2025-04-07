@@ -99,6 +99,9 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 			if lang == "cpp" {
 				fileName = fileName[:len(fileName)-4] + ".out"
 			}
+			if lang == "java" {
+				fileName = fileName[:len(fileName)-5] + ".class"
+			}
 
 			execConfig.Cmd = opt.ExecCmd(CONTAINER_COMPILED_FILES + "/" + fileName)
 		}
