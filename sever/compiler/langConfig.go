@@ -240,12 +240,20 @@ var LangImages = map[string]LangOptions{
 		IsCompiled: false,
 		ExecCmd: func(s string) []string {
 			fileName := fmt.Sprintf("%s-%d-code.php", time.Now().Format("2006-01-02_15-04-05"), time.Now().UnixNano())
-			if err := os.WriteFile(fileName, []byte(s), 0644); err != nil {
+			if err := os.WriteFile(COMPILED_FILES+"/"+fileName, []byte(s), 0644); err != nil {
 				log.Printf("failed to write file: %v", err)
 				return []string{"php", "-r", s}
 
 			}
-			return []string{"php", fileName}
+			return []string{"php", CONTAINER_COMPILED_FILES + "/" + fileName}
+		},
+		Mounts: []mount.Mount{
+			{
+				Type:     mount.TypeBind,
+				Source:   COMPILED_FILES,
+				Target:   CONTAINER_COMPILED_FILES,
+				ReadOnly: true,
+			},
 		},
 		RunOnHost:      nil,
 		FileName:       nil,
