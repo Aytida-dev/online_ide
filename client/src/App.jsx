@@ -36,6 +36,9 @@ const LANGUAGES = {
   },
   java: {
     name: 'Java',
+  },
+  php: {
+    name: 'PHP',
   }
 
 };

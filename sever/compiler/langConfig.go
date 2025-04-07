@@ -230,7 +230,28 @@ var LangImages = map[string]LangOptions{
 		// Env: []string{
 		// 	"CLASSPATH=.",
 		// },
-		// MemIdleThreshold: 15,
-		// CpuIdleThreshold: 5,
+		MemIdleThreshold: 15,
+		CpuIdleThreshold: 3,
+	},
+	"php": {
+		Image:      "php:8.3-cli",
+		IsCompiled: false,
+		ExecCmd: func(s string) []string {
+			s = strings.ReplaceAll(s, "<?php", "")
+			s = strings.ReplaceAll(s, "?>", "")
+			s = strings.TrimSpace(s)
+			return []string{"php -r", s}
+		},
+		RunOnHost:        nil,
+		FileName:         nil,
+		MinCpu:           1,
+		MinMem:           64 * 1024 * 1024,
+		IncrementalMem:   64 * 1024 * 1024,
+		IncrementalCpu:   1,
+		MaxMem:           256 * 1024 * 1024,
+		MaxCpu:           1,
+		Env:              []string{},
+		MemIdleThreshold: 5,
+		CpuIdleThreshold: 3,
 	},
 }
