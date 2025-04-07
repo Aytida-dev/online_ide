@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -191,7 +192,9 @@ var LangImages = map[string]LangOptions{
 		Image:      "openjdk:21-slim",
 		IsCompiled: true,
 		ExecCmd: func(s string) []string {
-			return []string{"java", "-cp", CONTAINER_COMPILED_FILES, strings.TrimSuffix(filepath.Base(s), ".java")}
+			userID := filepath.Base(filepath.Dir(s)) // assumes s = /tmp/code_files/<user>/code.java
+			className := strings.TrimSuffix(filepath.Base(s), ".java")
+			return []string{"java", "-cp", filepath.Join(CONTAINER_COMPILED_FILES, userID), className}
 		},
 		Mounts: []mount.Mount{
 			{
@@ -202,7 +205,10 @@ var LangImages = map[string]LangOptions{
 			},
 		},
 		RunOnHost: func(file string) []string {
-			return []string{"javac", "-d", COMPILED_FILES, file}
+			userID := filepath.Base(filepath.Dir(file))
+			compiledDir := filepath.Join(COMPILED_FILES, userID)
+			_ = os.MkdirAll(compiledDir, 0755)
+			return []string{"javac", "-d", compiledDir, file}
 		},
 		FileName: func(containerID string) string {
 			return fmt.Sprintf("%s-%d-code.java", containerID, time.Now().UnixNano())
