@@ -56,7 +56,7 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 			User:         "nobody",
 			Env: []string{
 				"HOME=/tmp",
-				"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+				"PATH=/usr/local/openjdk-21/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 			},
 			WorkingDir: "/tmp",
 			Privileged: false,
