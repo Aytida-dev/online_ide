@@ -1,46 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Editor from '@monaco-editor/react';
-import { Terminal } from 'xterm';
-import 'xterm/css/xterm.css';
+import React, { useEffect, useRef } from 'react';
+import Convert from 'ansi-to-html';
 
-const CodeEditor = () => {
-    const [code, setCode] = useState('');
-    const termRef = useRef(null);
-    const ws = useRef(null);
+const Terminal = ({ messages }) => {
+    const convert = new Convert({
+        fg: '#FFF',
+        bg: '#000',
+        newline: true,
+        escapeXML: true
+    });
 
+    const terminalRef = useRef(null);
+
+    // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        // Initialize terminal
-        termRef.current = new Terminal();
-        termRef.current.open(document.getElementById('terminal'));
-
-        // Connect to WebSocket
-        ws.current = new WebSocket('ws://localhost:8080/ws');
-
-        ws.current.onmessage = (event) => {
-            termRef.current.write(event.data);
-        };
-
-        return () => ws.current.close();
-    }, []);
-
-    const runCode = () => {
-        if (ws.current.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({ type: 'code', content: code }));
+        if (terminalRef.current) {
+            terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
         }
-    };
+    }, [messages]);
 
     return (
-        <div>
-            <Editor
-                height="60vh"
-                defaultLanguage="javascript"
-                defaultValue="// Write your code here"
-                onChange={(value) => setCode(value)}
-            />
-            <button onClick={runCode}>Run</button>
-            <div id="terminal" style={{ height: '30vh' }} />
+        <div className="terminal" ref={terminalRef}>
+            {messages.map((msg, i) => (
+                <div
+                    key={i}
+                    className={msg.isOutput ? 'output' : 'error'}
+                    dangerouslySetInnerHTML={{
+                        __html: convert.toHtml(msg.text)
+                    }}
+                />
+            ))}
         </div>
     );
 };
 
-export default CodeEditor;
+export default Terminal;

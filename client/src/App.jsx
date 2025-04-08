@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import Terminal from './components/Editor';
 
 // Message types
 const MESSAGE_TYPE = {
@@ -269,13 +270,7 @@ function App() {
               </div>
             )}
           </div>
-          <div className="terminal">
-            {messages.map((msg, i) => (
-              <div key={i} className={msg.isOutput ? 'output' : 'error'}>
-                {msg.text}
-              </div>
-            ))}
-          </div>
+          <Terminal messages={messages} />
         </div>
 
         {isRunning && (

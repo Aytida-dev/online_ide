@@ -93,3 +93,34 @@ textarea:focus {
 textarea::placeholder {
   color: #888;
 }
+
+.terminal {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  font-family: monospace;
+  padding: 10px;
+  border-radius: 4px;
+  height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal .output {
+  margin-bottom: 4px;
+}
+
+.terminal .error {
+  color: #f85149;
+  margin-bottom: 4px;
+}
+
+/* This preserves whitespace in the terminal output */
+.terminal div {
+  white-space: pre-wrap;
+}
+
+/* Style for the ANSI-colored elements from the converter */
+.terminal span {
+  display: inline;
+}
