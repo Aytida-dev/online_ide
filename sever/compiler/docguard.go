@@ -50,7 +50,10 @@ func (dm *DockerManager) checkAndUpdateResources() {
 	filledContainers := make(map[string]map[string]int)
 
 	containersToRemove := make(map[string]string)
+	containersToupdate := make(map[string]ContainerResources)
 
+	log.Print("lock by checkAndUpdateResources copy")
+	start := time.Now()
 	dm.mu.Lock()
 
 	maps.Copy(resuableContainers, dm.reusableContainers)
@@ -58,6 +61,7 @@ func (dm *DockerManager) checkAndUpdateResources() {
 	maps.Copy(containerResources, dm.containerResources)
 
 	dm.mu.Unlock()
+	log.Print("unlock by checkAndUpdateResources copy: ", time.Since(start))
 
 	for containerID := range containerResources {
 		var lang string
@@ -114,18 +118,9 @@ func (dm *DockerManager) checkAndUpdateResources() {
 		}
 
 		if stats.memoryPercentage < float64(opts.MemIdleThreshold) && stats.cpuPercentage < float64(opts.CpuIdleThreshold) {
-			dm.mu.Lock()
 			toChange = false
 			if _, ok := idleContainers[containerID]; !ok {
-				delete(dm.reusableContainers[lang], containerID)
-				delete(dm.filledContainers[lang], containerID)
-				delete(dm.containerResources, containerID)
-
-				err := dm.RemoveContainer(containerID, lang)
-				if err != nil {
-					log.Printf("Failed to remove container %s: %v", containerID, err)
-				}
-				log.Print("Idle Container removed : ", containerID)
+				containersToRemove[containerID] = lang
 			} else {
 				idleContainers[containerID] = lang
 			}
@@ -145,24 +140,34 @@ func (dm *DockerManager) checkAndUpdateResources() {
 				resources.CurrentMemory = newMem
 				resources.CurrentCPU = newCpu
 
-				dm.mu.Lock()
-				dm.containerResources[containerID] = resources
-				dm.mu.Unlock()
+				containersToupdate[containerID] = resources
 			}
 		}
 
 	}
 
+	log.Print("lock by checkAndUpdateResources remove")
+	start1 := time.Now()
+	dm.mu.Lock()
+	defer func() {
+		log.Print("unlock by checkAndUpdateResources remove: ", time.Since(start1))
+		dm.mu.Unlock()
+	}()
+
+	maps.Copy(dm.containerResources, containersToupdate)
+
 	for containerID, lang := range containersToRemove {
-		dm.mu.Lock()
-		defer dm.mu.Unlock()
+		delete(dm.reusableContainers[lang], containerID)
+		delete(dm.filledContainers[lang], containerID)
+		delete(dm.containerResources, containerID)
 
 		err := dm.RemoveContainer(containerID, lang)
 		if err != nil {
 			log.Printf("Failed to remove container %s: %v", containerID, err)
 		}
-		log.Print("Idle Container removed : ", containerID)
+		log.Print("Idle Container or stucked container removed : ", containerID)
 	}
+
 }
 
 func (dm *DockerManager) getContainerStats(containerID string) (containerStats, error) {

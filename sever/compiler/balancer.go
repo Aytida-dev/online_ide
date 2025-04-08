@@ -3,11 +3,18 @@ package compiler
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 func (dm *DockerManager) FindContainer(lang string) (string, error) {
+	log.Print("lock by FindContainer")
 	dm.mu.Lock()
-	defer dm.mu.Unlock()
+	start := time.Now()
+	defer func() {
+
+		log.Print("unlock by FindContainer: ", time.Since(start))
+		dm.mu.Unlock()
+	}()
 
 	var bestContainerID string
 	if containers, ok := dm.reusableContainers[lang]; ok && len(containers) > 0 {
@@ -63,8 +70,13 @@ func (dm *DockerManager) FindContainer(lang string) (string, error) {
 }
 
 func (dm *DockerManager) DecreaseUser(containerID string) error {
+	log.Print("lock by decreaseUser")
+	start := time.Now()
 	dm.mu.Lock()
-	defer dm.mu.Unlock()
+	defer func() {
+		log.Print("unlock by decreaseUser: ", time.Since(start))
+		dm.mu.Unlock()
+	}()
 
 	for lang, containers := range dm.reusableContainers {
 		if _, ok := containers[containerID]; ok {

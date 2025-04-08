@@ -77,7 +77,13 @@ var LangImages = map[string]LangOptions{
 		Image:      "python:3.12-alpine",
 		IsCompiled: false,
 		ExecCmd: func(s string) []string {
-			return []string{"python3", "-c", s}
+			fileName := fmt.Sprintf("%s-%d-code.py", time.Now().Format("2006-01-02_15-04-05"), time.Now().UnixNano())
+			if err := os.WriteFile(COMPILED_FILES+"/"+fileName, []byte(s), 0644); err != nil {
+				log.Printf("failed to write file: %v", err)
+				return []string{"python3", "-c", s}
+			}
+
+			return []string{"python3", CONTAINER_COMPILED_FILES + "/" + fileName}
 		},
 		CompileCmd: nil,
 		Mounts: []mount.Mount{
@@ -85,6 +91,12 @@ var LangImages = map[string]LangOptions{
 				Type:     mount.TypeVolume,
 				Source:   "vol-pip",
 				Target:   "/opt/py-packages",
+				ReadOnly: true,
+			},
+			{
+				Type:     mount.TypeBind,
+				Source:   COMPILED_FILES,
+				Target:   CONTAINER_COMPILED_FILES,
 				ReadOnly: true,
 			},
 		},

@@ -1,9 +1,9 @@
 package compiler
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -74,7 +74,6 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 
 			if opt.RunOnHost != nil {
 				cmd := opt.RunOnHost(CODE_FILES_DIR + "/" + fileName)
-				log.Print("Host command: ", cmd)
 				if out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
 					log.Printf("failed to run command on host: %v", err)
 
@@ -117,7 +116,7 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		hijackedResp, err := dm.cli.ContainerExecAttach(ctx, execResp.ID, container.ExecAttachOptions{Tty: true})
+		hijackedResp, err := dm.cli.ContainerExecAttach(ctx, execResp.ID, container.ExecAttachOptions{Tty: false})
 		if err != nil {
 			if err := conn.WriteMessage(websocket.TextMessage, []byte("error: "+err.Error())); err != nil {
 				return fmt.Errorf("failed to send message: %w", err)
@@ -157,13 +156,24 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 
 		go func() {
 			defer wg.Done()
-			scanner := bufio.NewScanner(hijackedResp.Reader)
-			for scanner.Scan() {
+			buffer := make([]byte, 4096)
+			for {
 				select {
 				case <-ctx.Done():
 					return
 				default:
-					conn.WriteMessage(websocket.TextMessage, scanner.Bytes())
+					n, err := hijackedResp.Reader.Read(buffer)
+					if err != nil {
+						if err != io.EOF {
+							log.Printf("read error: %v", err)
+						}
+						return
+					}
+					if n > 0 {
+						if err := conn.WriteMessage(websocket.TextMessage, buffer[:n]); err != nil {
+							return
+						}
+					}
 				}
 			}
 		}()
