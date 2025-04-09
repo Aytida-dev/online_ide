@@ -51,7 +51,7 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
-			Tty:          false,
+			Tty:          true,
 			Cmd:          opt.ExecCmd(tcode),
 			User:         "nobody",
 			Env:          opt.Env,
