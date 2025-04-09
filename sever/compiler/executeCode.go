@@ -46,12 +46,23 @@ func (dm *DockerManager) RunLiveCode(lang, containerID string, conn *websocket.C
 		}
 		tcode := strings.TrimPrefix(code, "CODE:")
 
+		if lang == "c" {
+			tcode = "#include <stdio.h>\n" +
+				"#ifdef __unix__\n" +
+				"#include <unistd.h>\n" +
+				"#endif\n" +
+				"void __attribute__((constructor)) initIO(void) {\n" +
+				"    setvbuf(stdout, NULL, _IONBF, 0);\n" +
+				"    setvbuf(stderr, NULL, _IONBF, 0);\n" +
+				"}\n" + tcode
+		}
+
 		// Setup exec instance
 		execConfig := container.ExecOptions{
 			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
-			Tty:          true,
+			Tty:          false,
 			Cmd:          opt.ExecCmd(tcode),
 			User:         "nobody",
 			Env:          opt.Env,
